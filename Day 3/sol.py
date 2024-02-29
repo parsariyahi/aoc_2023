@@ -1,84 +1,75 @@
-def get_number_indices(data: str):
-    indices = list()
-    for index, char in enumerate(data):
-        if char.isdigit():
-            indices.append(index) 
-    
-    return indices
+from copy import deepcopy
 
-def get_symbol_indices(data: str):
-    indices = list()
-    for index, char in enumerate(data):
-        if (not char.isdigit() and char != "."):
-            indices.append(index) 
-    
-    return indices
 
-def extract_number(string, c):
+def check_symbol(char: str):
+    if not (char.isalnum()) and char != ".":
+        #print("current char: ", char, "\n")
+        return True
+    return False
+
+
+def find_symbols(line: str):
+    result = []
+    for index, char in enumerate(line):
+        if check_symbol(char):
+            result.append(index) 
+
+    return result
+
+
+def find_number(line: str):
+    result = []
     number = ""
-    counter = c
-    for char in string:
-        if char.isdigit():
+    indices = []
+    for index, char in enumerate(line):
+        if char.isnumeric():
             number += char
-            counter += 1
-        else:
-            break
+            indices.append(index)
+            continue
 
-    return number, counter
+        if number:
+            result.append([int(number), deepcopy(indices)])
+            number = ""
+            indices.clear()
 
-def check_adjacent(symbols, numbers, line):
-    res_numbers = []
-
-    if not symbols:
-        return []
-    c = 0
-    for s_index in symbols:
-        for n_index in numbers:
-            if s_index == n_index or \
-            s_index + 1 == n_index or \
-            s_index - 1 == n_index:
-                n, c = extract_number(line[c:], c)
-                print(c)
-                res_numbers.append(n)
-    
-    return res_numbers
+    return result
 
 
-with open("Day 3\input.txt", "r") as file:
-    data = file.read()
-    lines = data.splitlines()
-    total = 0
+def find_adjacent_number(line: str, other_line):
+    adjacent = []
+    if other_line:
+        numbers = find_number(line)
+        line_symbols = find_symbols(line)
+        other_line_symbols = find_symbols(other_line)
+        for number, number_indices in numbers:
+            for num_index in number_indices:
+                if num_index in line_symbols or num_index in other_line_symbols:
+                    adjacent.append(number)
 
-    for index, line in enumerate(lines):
-        current_line_number_indices = get_number_indices(line)
-        # next_line_number_indices = get_number_indices(lines[index + 1])
-        # prev_line_number_indices = get_number_indices(lines[index - 1])
-        current_line_symbol_indices = get_symbol_indices(line)
-        try:
-            next_line_symbol_indices = get_symbol_indices(lines[index + 1])
-        except IndexError:
-            next_line_symbol_indices = [] 
-
-        try:     
-            prev_line_symbol_indices = get_symbol_indices(lines[index - 1])
-        except IndexError:
-            prev_line_symbol_indices = []
+    return adjacent
 
 
-        # print("number index : ", current_line_number_indices)
-        # print("current symbol index : ", current_line_symbol_indices)
-        # print("next symbol index : ", next_line_symbol_indices)
-        # print("prev symbol index : ", prev_line_symbol_indices)
+def main():
+    with open("input.txt", "r") as file:
+        data = file.read()
+        lines = data.splitlines()
+        total = 0
+        max_index = len(lines) - 1
+        min_index = 0
 
-        # if check_adjacent(current_line_symbol_indices, current_line_number_indices) or \
-        #     check_adjacent(next_line_symbol_indices, current_line_number_indices) or \
-        #     check_adjacent(prev_line_symbol_indices, current_line_number_indices):
+        for index, line in enumerate(lines):
+            current_line = line
+            prev_line = lines[index-1] if index != min_index else None
+            next_line = lines[index+1] if index != max_index else None
+            print("current line: \n", current_line)
+            print("prev line: \n", prev_line)
+            print("next line: \n", next_line)
+            res_with_prev = find_adjacent_number(current_line, prev_line)
+            res_with_next = find_adjacent_number(current_line, next_line)
+            total += sum(res_with_prev) if res_with_prev else 0
+            total += sum(res_with_next) if res_with_next else 0
 
-        res = check_adjacent(current_line_symbol_indices, current_line_number_indices, line)
-        res.append(check_adjacent(next_line_symbol_indices, current_line_number_indices, line))
-        res.append(check_adjacent(prev_line_symbol_indices, current_line_number_indices, line))
+    print(total)
 
-        for number in res:
-            total += int(number)
 
-print(total)
+main()
